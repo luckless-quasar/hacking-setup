@@ -10,9 +10,50 @@ Vagrant.configure("2") do |config|
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
 
-  # Every Vagrant development environment requires a box. You can search for
-  # boxes at https://vagrantcloud.com/search.
-  config.vm.box = "base"
+  config.vm.define "pentest", primary: true do |pentest|
+    # Every Vagrant development environment requires a box. You can search for
+    # boxes at https://vagrantcloud.com/search.
+    #config.vm.box = "base"
+    pentest.vm.box = "kali"
+
+    # Creates a SOCKS proxy to connect to Burp.
+    # See https://trelis24.github.io/2017/12/20/SSH-Tunneling/
+    pentest.ssh.extra_args = ["-D", "9090"]
+
+    # Share an additional folder to the guest VM. The first argument is
+    # the path on the host to the actual folder. The second argument is
+    # the path on the guest to mount the folder. 
+    #pentest.vm.synced_folder "htb", "/home/vagrant/htb", create: true
+    pentest.vm.synced_folder "pentest", "/home/vagrant/pentest", create: true
+
+    # Enable provisioning with a shell script. Additional provisioners such as
+    # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
+    # documentation for more information about their specific syntax and use.
+    pentest.vm.provision "shell", path: "provision.sh"
+  end
+
+  config.vm.define "ctf", autostart:false do |ctf|
+    # Every Vagrant development environment requires a box. You can search for
+    # boxes at https://vagrantcloud.com/search.
+    # config.vm.box = "base"
+    ctf.vm.box = "kali"
+
+    # Creates a SOCKS proxy to connect to Burp.
+    # See https://trelis24.github.io/2017/12/20/SSH-Tunneling/
+    ctf.ssh.extra_args = ["-D", "9090"]
+
+    # Share an additional folder to the guest VM. The first argument is
+    # the path on the host to the actual folder. The second argument is
+    # the path on the guest to mount the folder. And the optional third
+    # argument is a set of non-required options.
+    ctf.vm.synced_folder "ctf", "/home/vagrant/ctf", create: true
+
+    # Enable provisioning with a shell script. Additional provisioners such as
+    # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
+    # documentation for more information about their specific syntax and use.
+    ctf.vm.provision "shell", path: "provision.sh"
+  end
+
 
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
@@ -39,12 +80,6 @@ Vagrant.configure("2") do |config|
   # your network.
   # config.vm.network "public_network"
 
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
-
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
   # Example for VirtualBox:
@@ -56,9 +91,19 @@ Vagrant.configure("2") do |config|
   #   # Customize the amount of memory on the VM:
   #   vb.memory = "1024"
   # end
-  #
-  # View the documentation for the provider you are using for more
-  # information on available options.
+
+  config.vm.provider 'vmware_desktop' do |v|
+    # Disable GUI
+    #v.gui = false
+
+    # Set RAM and CPU cores
+    v.vmx["memsize"] = "8192"
+    v.vmx["numvcpus"] = "4"
+
+    # Set VMWare to use the VMXNET3 which is the latest virtual network adapter
+    # See https://www.blackmanticore.com/e18dc84d28941e69dc059e53b64f5279
+    v.vmx["ethernet0.virtualdev"] = "vmxnet3"
+  end
 
   # Enable provisioning with a shell script. Additional provisioners such as
   # Ansible, Chef, Docker, Puppet and Salt are also available. Please see the
